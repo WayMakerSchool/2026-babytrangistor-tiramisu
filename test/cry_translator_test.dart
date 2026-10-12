@@ -21,6 +21,8 @@ void main() {
       expect(CryTranslator.translate('Ne').categoryKo, '배고픔');
       expect(CryTranslator.translate('Ooh').categoryKo, '졸림');
       expect(CryTranslator.translate('E-air').categoryKo, '하복부 가스');
+      expect(CryTranslator.translate('Air').categoryKo, '하복부 가스');
+      expect(CryTranslator.translate('E-he').categoryKo, '불편함 (기저귀/온도)');
     });
 
     test('알 수 없는 소리는 Unknown으로 처리하고 알림 대상이 아니다', () {

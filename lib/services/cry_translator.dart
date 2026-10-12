@@ -126,6 +126,8 @@ class CryTranslator {
       'ooh': 'owh',
       'ow': 'owh',
       'e-air': 'eair',
+      'air': 'eair',
+      'e-he': 'heh',
     };
     return _rules[hardwareAliases[normalized] ?? normalized] ?? _unknown;
   }
