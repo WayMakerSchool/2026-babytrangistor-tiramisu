@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -40,8 +41,9 @@ abstract class ConnectionService {
       if (decoded is Map<String, dynamic>) {
         emitData(BabyCryData.fromJson(decoded));
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
       // 손상된 패킷은 무시 (하드웨어 전송 중 노이즈 가능성)
+      debugPrint('MQTT payload parse failed: $error\n$stackTrace');
     }
   }
 
@@ -84,36 +86,55 @@ class MqttConnectionService extends ConnectionService {
       'tiramisu_app_${DateTime.now().millisecondsSinceEpoch}',
     );
     client.keepAlivePeriod = 30;
+    client.connectTimeoutPeriod = 10000;
     client.autoReconnect = true;
     client.logging(on: false);
+    client.onConnected = () =>
+        debugPrint('MQTT connected: ${settings.mqttHost}:${settings.mqttPort}');
+    client.onSubscribed = (topic) => debugPrint('MQTT subscribed: $topic');
+    client.onSubscribeFail = (topic) =>
+        debugPrint('MQTT subscribe failed: $topic');
     client.onDisconnected = () {
+      debugPrint('MQTT disconnected');
       if (status != ConnectionStatus.error) {
         setStatus(ConnectionStatus.disconnected);
       }
     };
-    client.onAutoReconnected = () => setStatus(ConnectionStatus.connected);
+    client.onAutoReconnected = () {
+      debugPrint('MQTT auto-reconnected');
+      setStatus(ConnectionStatus.connected);
+    };
     _client = client;
 
     try {
-      await client.connect();
+      await client.connect().timeout(const Duration(seconds: 20));
       if (client.connectionStatus?.state == MqttConnectionState.connected) {
         client.subscribe(settings.mqttTopic, MqttQos.atLeastOnce);
         client.updates?.listen((events) {
           for (final event in events) {
-            final message = event.payload;
-            if (message is MqttPublishMessage) {
-              final raw = MqttPublishPayload.bytesToStringAsString(
-                message.payload.message,
-              );
-              handleRawJson(raw);
+            try {
+              final message = event.payload;
+              debugPrint('MQTT message received on ${event.topic}');
+              if (message is MqttPublishMessage) {
+                final raw = MqttPublishPayload.bytesToStringAsString(
+                  message.payload.message,
+                );
+                debugPrint('MQTT payload: $raw');
+                handleRawJson(raw);
+              }
+            } catch (error, stackTrace) {
+              debugPrint('MQTT message handling failed: $error\n$stackTrace');
             }
           }
         });
+        debugPrint('MQTT subscription requested: ${settings.mqttTopic}');
         setStatus(ConnectionStatus.connected);
       } else {
+        debugPrint('MQTT connection state: ${client.connectionStatus}');
         setStatus(ConnectionStatus.error);
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('MQTT connection failed: $error\n$stackTrace');
       setStatus(ConnectionStatus.error);
       client.disconnect();
     }
@@ -129,12 +150,17 @@ class MqttConnectionService extends ConnectionService {
   @override
   Future<bool> sendWifiCredentials(String ssid, String password) async {
     final client = _client;
-    if (client == null || client.connectionStatus?.state != MqttConnectionState.connected) {
+    if (client == null ||
+        client.connectionStatus?.state != MqttConnectionState.connected) {
       return false;
     }
     final builder = MqttClientPayloadBuilder();
     builder.addString(jsonEncode({'ssid': ssid, 'password': password}));
-    client.publishMessage('${settings.mqttTopic}/config', MqttQos.atLeastOnce, builder.payload!);
+    client.publishMessage(
+      '${settings.mqttTopic}/config',
+      MqttQos.atLeastOnce,
+      builder.payload!,
+    );
     return true;
   }
 }
@@ -200,12 +226,14 @@ class DemoConnectionService extends ConnectionService {
 
   /// 샌드박스 버튼에서 호출: 모의 하드웨어 이벤트 주입.
   void trigger(String sound, double confidence, int decibel) {
-    emitData(BabyCryData(
-      deviceId: 'BABY_MONITOR_01',
-      timestamp: DateTime.now(),
-      detectedSound: sound,
-      confidenceScore: confidence,
-      decibelLevel: decibel,
-    ));
+    emitData(
+      BabyCryData(
+        deviceId: 'BABY_MONITOR_01',
+        timestamp: DateTime.now(),
+        detectedSound: sound,
+        confidenceScore: confidence,
+        decibelLevel: decibel,
+      ),
+    );
   }
 }
