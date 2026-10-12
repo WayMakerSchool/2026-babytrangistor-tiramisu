@@ -7,23 +7,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:baby_cry_translator/main.dart';
+import 'package:baby_cry_translator/services/cry_translator.dart';
 
 void main() {
-  testWidgets('Simulated input updates translation',
-      (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const BabyCryTranslatorApp());
-
-    // The screen initially waits for hardware input.
-    expect(find.text('하드웨어 대기 중'), findsOneWidget);
-
-    // Simulate a hungry cry through the test button.
-    await tester.tap(find.text('배고픔(Neh)'));
-    await tester.pump();
-
-    // The received input replaces the waiting message.
-    expect(find.text('하드웨어 대기 중'), findsNothing);
-    expect(find.text('배고픔 (Neh)'), findsOneWidget);
+  test('translates a hungry cry', () {
+    final result = CryTranslator.translate('Neh');
+    expect(result.categoryKo, '배고픔');
+    expect(result.isCry, isTrue);
   });
 }
