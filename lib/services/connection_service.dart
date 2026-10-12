@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:mqtt_client/mqtt_client.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:web_socket_channel/io.dart';
 
 import '../models/baby_cry_data.dart';
 import 'app_settings.dart';
+import 'mqtt_client_adapter.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected, error }
 
@@ -71,18 +71,18 @@ abstract class ConnectionService {
 /// 집 밖에서도 브로커만 접근 가능하면 아기 상태를 확인할 수 있다.
 class MqttConnectionService extends ConnectionService {
   final AppSettings settings;
-  MqttServerClient? _client;
+  MqttClient? _client;
 
   MqttConnectionService(this.settings) : super._();
 
   @override
   Future<void> connect() async {
     setStatus(ConnectionStatus.connecting);
-    final client = MqttServerClient(
+    final client = createMqttClient(
       settings.mqttHost,
+      settings.mqttPort,
       'tiramisu_app_${DateTime.now().millisecondsSinceEpoch}',
     );
-    client.port = settings.mqttPort;
     client.keepAlivePeriod = 30;
     client.autoReconnect = true;
     client.logging(on: false);
