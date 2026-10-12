@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -43,7 +43,7 @@ abstract class ConnectionService {
       }
     } catch (error, stackTrace) {
       // 손상된 패킷은 무시 (하드웨어 전송 중 노이즈 가능성)
-      debugPrint('MQTT payload parse failed: $error\n$stackTrace');
+      developer.log('MQTT payload parse failed: $error\n$stackTrace');
     }
   }
 
@@ -89,19 +89,20 @@ class MqttConnectionService extends ConnectionService {
     client.connectTimeoutPeriod = 10000;
     client.autoReconnect = true;
     client.logging(on: false);
-    client.onConnected = () =>
-        debugPrint('MQTT connected: ${settings.mqttHost}:${settings.mqttPort}');
-    client.onSubscribed = (topic) => debugPrint('MQTT subscribed: $topic');
+    client.onConnected = () => developer.log(
+      'MQTT connected: ${settings.mqttHost}:${settings.mqttPort}',
+    );
+    client.onSubscribed = (topic) => developer.log('MQTT subscribed: $topic');
     client.onSubscribeFail = (topic) =>
-        debugPrint('MQTT subscribe failed: $topic');
+        developer.log('MQTT subscribe failed: $topic');
     client.onDisconnected = () {
-      debugPrint('MQTT disconnected');
+      developer.log('MQTT disconnected');
       if (status != ConnectionStatus.error) {
         setStatus(ConnectionStatus.disconnected);
       }
     };
     client.onAutoReconnected = () {
-      debugPrint('MQTT auto-reconnected');
+      developer.log('MQTT auto-reconnected');
       setStatus(ConnectionStatus.connected);
     };
     _client = client;
@@ -114,27 +115,29 @@ class MqttConnectionService extends ConnectionService {
           for (final event in events) {
             try {
               final message = event.payload;
-              debugPrint('MQTT message received on ${event.topic}');
+              developer.log('MQTT message received on ${event.topic}');
               if (message is MqttPublishMessage) {
                 final raw = MqttPublishPayload.bytesToStringAsString(
                   message.payload.message,
                 );
-                debugPrint('MQTT payload: $raw');
+                developer.log('MQTT payload: $raw');
                 handleRawJson(raw);
               }
             } catch (error, stackTrace) {
-              debugPrint('MQTT message handling failed: $error\n$stackTrace');
+              developer.log(
+                'MQTT message handling failed: $error\n$stackTrace',
+              );
             }
           }
         });
-        debugPrint('MQTT subscription requested: ${settings.mqttTopic}');
+        developer.log('MQTT subscription requested: ${settings.mqttTopic}');
         setStatus(ConnectionStatus.connected);
       } else {
-        debugPrint('MQTT connection state: ${client.connectionStatus}');
+        developer.log('MQTT connection state: ${client.connectionStatus}');
         setStatus(ConnectionStatus.error);
       }
     } catch (error, stackTrace) {
-      debugPrint('MQTT connection failed: $error\n$stackTrace');
+      developer.log('MQTT connection failed: $error\n$stackTrace');
       setStatus(ConnectionStatus.error);
       client.disconnect();
     }
