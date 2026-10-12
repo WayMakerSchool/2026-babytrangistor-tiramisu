@@ -17,6 +17,12 @@ void main() {
       expect(CryTranslator.translate('owh').sound, 'Owh');
     });
 
+    test('ESP32 짧은 분류 표기를 표준 규칙으로 변환한다', () {
+      expect(CryTranslator.translate('Ne').categoryKo, '배고픔');
+      expect(CryTranslator.translate('Ooh').categoryKo, '졸림');
+      expect(CryTranslator.translate('E-air').categoryKo, '하복부 가스');
+    });
+
     test('알 수 없는 소리는 Unknown으로 처리하고 알림 대상이 아니다', () {
       final result = CryTranslator.translate('babble');
       expect(result.sound, 'Unknown');

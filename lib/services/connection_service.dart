@@ -7,7 +7,6 @@ import 'package:web_socket_channel/io.dart';
 import '../models/baby_cry_data.dart';
 import 'app_settings.dart';
 import 'mqtt_client_adapter.dart';
-import 'platform_log.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected, error }
 
@@ -41,9 +40,8 @@ abstract class ConnectionService {
       if (decoded is Map<String, dynamic>) {
         emitData(BabyCryData.fromJson(decoded));
       }
-    } catch (error, stackTrace) {
+    } catch (_) {
       // 손상된 패킷은 무시 (하드웨어 전송 중 노이즈 가능성)
-      platformLog('MQTT payload parse failed: $error\n$stackTrace');
     }
   }
 
@@ -89,22 +87,12 @@ class MqttConnectionService extends ConnectionService {
     client.connectTimeoutPeriod = 10000;
     client.autoReconnect = true;
     client.logging(on: false);
-    client.onConnected = () => platformLog(
-      'MQTT connected: ${settings.mqttHost}:${settings.mqttPort}',
-    );
-    client.onSubscribed = (topic) => platformLog('MQTT subscribed: $topic');
-    client.onSubscribeFail = (topic) =>
-        platformLog('MQTT subscribe failed: $topic');
     client.onDisconnected = () {
-      platformLog('MQTT disconnected');
       if (status != ConnectionStatus.error) {
         setStatus(ConnectionStatus.disconnected);
       }
     };
-    client.onAutoReconnected = () {
-      platformLog('MQTT auto-reconnected');
-      setStatus(ConnectionStatus.connected);
-    };
+    client.onAutoReconnected = () => setStatus(ConnectionStatus.connected);
     _client = client;
 
     try {
@@ -114,28 +102,21 @@ class MqttConnectionService extends ConnectionService {
           for (final event in events) {
             try {
               final message = event.payload;
-              platformLog('MQTT message received on ${event.topic}');
               if (message is MqttPublishMessage) {
                 final raw = MqttPublishPayload.bytesToStringAsString(
                   message.payload.message,
                 );
-                platformLog('MQTT payload: $raw');
                 handleRawJson(raw);
               }
-            } catch (error, stackTrace) {
-              platformLog('MQTT message handling failed: $error\n$stackTrace');
-            }
+            } catch (_) {}
           }
         });
         client.subscribe(settings.mqttTopic, MqttQos.atLeastOnce);
-        platformLog('MQTT subscription requested: ${settings.mqttTopic}');
         setStatus(ConnectionStatus.connected);
       } else {
-        platformLog('MQTT connection state: ${client.connectionStatus}');
         setStatus(ConnectionStatus.error);
       }
-    } catch (error, stackTrace) {
-      platformLog('MQTT connection failed: $error\n$stackTrace');
+    } catch (_) {
       setStatus(ConnectionStatus.error);
       client.disconnect();
     }
