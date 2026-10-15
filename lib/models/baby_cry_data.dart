@@ -4,6 +4,7 @@
 /// ```json
 /// {
 ///   "device_id": "BABY_MONITOR_01",
+///   "result_id": "R000123",
 ///   "timestamp": "2026-07-14T14:15:00Z",
 ///   "detected_sound": "Neh",
 ///   "confidence_score": 0.92,
@@ -12,6 +13,7 @@
 /// ```
 class BabyCryData {
   final String deviceId;
+  final String resultId;
   final DateTime timestamp;
   final String detectedSound;
   final double confidenceScore;
@@ -19,6 +21,7 @@ class BabyCryData {
 
   const BabyCryData({
     required this.deviceId,
+    required this.resultId,
     required this.timestamp,
     required this.detectedSound,
     required this.confidenceScore,
@@ -28,6 +31,7 @@ class BabyCryData {
   factory BabyCryData.fromJson(Map<String, dynamic> json) {
     return BabyCryData(
       deviceId: json['device_id'] as String? ?? 'UNKNOWN_MONITOR',
+      resultId: json['result_id'] as String? ?? 'UNKNOWN_RESULT',
       timestamp: json['timestamp'] != null
           ? DateTime.tryParse(json['timestamp'] as String)?.toLocal() ??
               DateTime.now()
@@ -42,6 +46,7 @@ class BabyCryData {
   Map<String, dynamic> toJson() {
     return {
       'device_id': deviceId,
+      'result_id': resultId,
       'timestamp': timestamp.toIso8601String(),
       'detected_sound': detectedSound,
       'confidence_score': confidenceScore,

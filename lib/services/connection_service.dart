@@ -211,6 +211,7 @@ class DemoConnectionService extends ConnectionService {
     emitData(
       BabyCryData(
         deviceId: 'BABY_MONITOR_01',
+        resultId: 'DEMO-${DateTime.now().millisecondsSinceEpoch}',
         timestamp: DateTime.now(),
         detectedSound: sound,
         confidenceScore: confidence,

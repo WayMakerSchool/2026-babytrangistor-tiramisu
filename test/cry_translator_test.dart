@@ -61,7 +61,8 @@ void main() {
 
     test('toJson 라운드트립이 성립한다', () {
       final original = BabyCryData(
-        deviceId: 'D1',
+      deviceId: 'D1',
+      resultId: 'R-TEST-001',
         timestamp: DateTime(2026, 7, 14, 14, 15),
         detectedSound: 'Owh',
         confidenceScore: 0.88,

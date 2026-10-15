@@ -235,6 +235,10 @@ class _HistoryTile extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 12, color: AppColors.textGrey),
                 ),
+                Text(
+                  '결과 ID ${data.resultId}',
+                  style: const TextStyle(fontSize: 10, color: AppColors.textGrey),
+                ),
               ],
             ),
           ),
